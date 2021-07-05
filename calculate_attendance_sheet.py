@@ -3,13 +3,17 @@ import xlrd
 import xlwt
 import os
 from pathlib import Path
+import datetime
+
 # import win32com.client
 
-ADVANCE_START = '0:01'
-ADVANCE_END = '9:00'
+ADVANCE_START = '05:01'
+ADVANCE_END = '09:00'
 ADVANCE_MONEY = 15
-GO_LATE_START = '20:30'
+GO_LATE_START = '20:29'
 GO_LATE_END = '23:59'
+GO_LATE_TOMORROW_START = '00:00'
+GO_LATE_TOMORROW_END = '05:00'
 GO_LATE_MONEY = 25
 IGNORE_NAME = '姓名'
 DIR_PATH = "files"
@@ -58,6 +62,10 @@ def pwd_xlsx(old_filename, new_filename, pwd_str, pw_str=''):
 global result_sheet  # result_sheet
 
 
+def get_current_time():
+    return datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+
 def calculate_attendance_sheet():
     import time
     result_cols = 0
@@ -76,7 +84,7 @@ def calculate_attendance_sheet():
     page = len(data.sheets())  # 获取sheet的数量
     for i in range(page):
         table = data.sheets()[i]
-        print(table.name, i)
+        # print(table.name, i)
         result_sheet = result.add_sheet(table.name)  # 写sheet name
         result_cols = 0
         for row_result in range(len(result_title)):
@@ -101,11 +109,31 @@ def calculate_attendance_sheet():
                 go_late_flag = 0
                 for index in range(len(split_date)):
                     time = split_date[index]
-                    if ADVANCE_START <= time <= ADVANCE_END:
-                        advance_flag = 1
+                    # if 'NeWolf' == name and len(time) > 2:
+                    #     print('time = %s' % time)
 
-                    if GO_LATE_START <= time <= GO_LATE_END:
+                    if len(time) > 6:
+                        # print('len(time) > 6 time = %s' % time)
+                        continue
+
+                    if not time.__contains__(":"):
+                        # if not '' == time:
+                        # print('not time = %s' % time)
+                        continue
+
+                    # print('normal time = %s' % time)
+
+                    is_advance = ADVANCE_START <= time <= ADVANCE_END
+                    if is_advance:
+                        advance_flag = 1
+                        # print('is_advance = %s time = %s' % (is_advance, time))
+
+                    is_late = GO_LATE_START <= time <= GO_LATE_END or \
+                              GO_LATE_TOMORROW_START <= time <= GO_LATE_TOMORROW_END
+                    if is_late:
                         go_late_flag = 1
+                        # print('is_late = %s time = %s' % (is_late, time))
+
                 advance += advance_flag
                 go_late += go_late_flag
 
@@ -128,12 +156,13 @@ def calculate_attendance_sheet():
     result_cols += 3
     import time
     use_time = time.time() - start_time
-    print("use time = %.2f s" % use_time)
+
     result_sheet.write(result_cols, 4, "use time = %.2f s, by NeWolf" % use_time)
     file_name = file_name.split('.')
     # print(file_name[0])
-    result_file_name = '%s_result.xls' % file_name[0]
+    result_file_name = '%s_%s_result.xls' % (file_name[0], get_current_time())
     result.save(result_file_name)
+    print("use time = %.2f s , result file is %s" % (use_time, result_file_name))
     # pwd_xlsx(result_file_name, result_file_name, "NeWolf")
 
 
